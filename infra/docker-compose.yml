@@ -7,14 +7,6 @@ services:
       - postgres_data:/var/lib/postgresql/data/
     env_file:
       - ./.env
-  frontend:
-    build:
-      context: ../frontend
-      dockerfile: Dockerfile
-    volumes:
-      - ../frontend/:/app/result_build/
-    depends_on:
-      - web
   web:
     build: ../backend
     restart: always
@@ -25,6 +17,14 @@ services:
       - db
     env_file:
       - ./.env
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    volumes:
+      - ../frontend/:/app/result_build/
+    depends_on:
+      - web
   nginx:
     image: nginx:1.19.3
     ports:
