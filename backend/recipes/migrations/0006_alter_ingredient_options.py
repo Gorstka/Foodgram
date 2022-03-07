@@ -6,15 +6,12 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("recipes", "0005_auto_20211218_1002"),
+        ('recipes', '0005_auto_20211218_1002'),
     ]
 
     operations = [
         migrations.AlterModelOptions(
-            name="ingredient",
-            options={
-                "verbose_name": "Ингредиент",
-                "verbose_name_plural": "Ингредиенты",
-            },
+            name='ingredient',
+            options={'verbose_name': 'Ингредиент', 'verbose_name_plural': 'Ингредиенты'},
         ),
     ]
