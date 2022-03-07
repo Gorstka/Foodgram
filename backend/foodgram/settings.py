@@ -7,7 +7,7 @@ load_dotenv(find_dotenv())
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.environ.get("SECRET_KEY")
+SECRET_KEY = django-insecure-+91q)x@j7k%3gb^#15+7m*2x+j&tja11jprzed(eolnj#5x=oi
 
 DEBUG = False
 
