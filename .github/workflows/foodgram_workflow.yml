@@ -63,7 +63,6 @@ jobs:
           passphrase: ${{ secrets.PASSPHRASE }}
           script: |
             sudo docker pull ${{ secrets.DOCKER_USERNAME }}/foodgram
-            cd infra
             sudo docker-compose stop
             sudo docker-compose rm web
             touch .env
