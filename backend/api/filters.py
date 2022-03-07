@@ -3,18 +3,16 @@ from recipes.models import Ingredient, Recipe
 
 
 class RecipeFilter(FilterSet):
-    tags = AllValuesMultipleFilter(
-        field_name='tags__slug'
-    )
+    tags = AllValuesMultipleFilter(field_name="tags__slug")
 
     class Meta:
         model = Recipe
-        fields = ('tags', 'author')
+        fields = ("tags", "author")
 
 
 class IngredientFilter(FilterSet):
-    name = CharFilter(field_name='name', lookup_expr='icontains')
+    name = CharFilter(field_name="name", lookup_expr="icontains")
 
     class Meta:
         model = Ingredient
-        fields = ('name',)
+        fields = ("name",)
