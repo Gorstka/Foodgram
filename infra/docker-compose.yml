@@ -1,11 +1,13 @@
 version: '3.3'
 services:
+
   db:
     image: postgres:13.2
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     env_file:
       - ./.env
+
   web:
     image: gorstka/foodgram:v1.1
     restart: always
@@ -16,6 +18,7 @@ services:
       - db
     env_file:
       - ./.env
+
   frontend:
     build:
       context: ../frontend
@@ -24,6 +27,7 @@ services:
       - ../frontend/:/app/result_build/
     depends_on:
       - web
+
   nginx:
     image: nginx:1.19.3
     ports:
