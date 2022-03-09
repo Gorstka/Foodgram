@@ -17,7 +17,9 @@ services:
     env_file:
       - ./.env
   frontend:
-    image: gorstka/front_foodgram:latest
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
     volumes:
       - ../frontend/:/app/result_build/
     depends_on:
