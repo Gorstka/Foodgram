@@ -1,5 +1,7 @@
 from django.shortcuts import get_object_or_404
 from drf_extra_fields.fields import Base64ImageField
+from rest_framework import serializers
+
 from recipes.models import (
     Favorite,
     Ingredient,
@@ -9,7 +11,6 @@ from recipes.models import (
     Subscribe,
     Tag,
 )
-from rest_framework import serializers
 from users.models import CustomUser
 
 
@@ -133,21 +134,21 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def parse_ingredients(recipe, data):
-        for ingredient_data in data:
-            ingredient_current = get_object_or_404(
-                Ingredient, pk=ingredient_data["ingredient"]["id"]
-            )
-            IngredientRecipe.objects.create(
-                recipe=recipe,
-                amount=ingredient_data["amount"],
-                ingredient=ingredient_current,
-            )
+        if ingredient_data in data:
+            ingredient_current = IngredientRecipe.objects.all()
+        else:
+            raise ValidationError("Miss ingredient")
+        IngredientRecipe.objects.create(
+            recipe=recipe,
+            amount=ingredient_data["amount"],
+            ingredient=ingredient_current,
+        )
 
     def create(self, validated_data):
         if "tags" in validated_data:
             tags = validated_data.pop("tags")
         ingredients_data = validated_data.pop("related_ingredients")
-        recipe = Recipe.objects.create(**validated_data)
+        recipe = super().create(validated_data)
         recipe.tags.add(*tags)
         self.parse_ingredients(recipe, ingredients_data)
         return recipe
@@ -164,10 +165,6 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         return instance
 
     def validate(self, data):
-        if data["cooking_time"] < 0:
-            raise serializers.ValidationError(
-                "Укажите корректное время приготовления!"
-            )
         ingredients = []
         for ingredient in data["related_ingredients"]:
             if ingredient["amount"] < 1:

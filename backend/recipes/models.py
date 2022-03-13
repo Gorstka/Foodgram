@@ -1,4 +1,6 @@
 from django.db import models
+from django.core.validators import MinValueValidator
+
 from users.models import CustomUser
 
 
@@ -29,7 +31,13 @@ class Recipe(models.Model):
     image = models.ImageField(upload_to="recipes/", verbose_name="Изображение")
     text = models.TextField(verbose_name="text")
     cooking_time = models.PositiveIntegerField(
-        verbose_name="Время приготовления"
+        verbose_name="Время приготовления",
+        validators=[
+            MinValueValidator(
+                limit_value=0,
+                message="Укажите корректное время приготовления!",
+            )
+        ]
     )
     ingredients = models.ManyToManyField(
         Ingredient, through="IngredientRecipe", verbose_name="Ингредиенты"

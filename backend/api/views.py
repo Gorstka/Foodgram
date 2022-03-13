@@ -1,20 +1,12 @@
 from django.http import HttpResponse
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet as DjoserUserViewSet
-from recipes.models import (
-    Favorite,
-    Ingredient,
-    Recipe,
-    ShopingCart,
-    Subscribe,
-    Tag,
-)
+
 from rest_framework import filters, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
-from users.models import CustomUser
 
 from .filters import IngredientFilter, RecipeFilter
 from .paginators import PageNumberPaginatorCustom
@@ -26,6 +18,15 @@ from .serializers import (
     SubscriptionsSerializer,
     TagSerializer,
 )
+from recipes.models import (
+    Favorite,
+    Ingredient,
+    Recipe,
+    ShopingCart,
+    Subscribe,
+    Tag,
+)
+from users.models import CustomUser
 
 
 class UserViewset(DjoserUserViewSet):
@@ -49,22 +50,16 @@ class UserViewset(DjoserUserViewSet):
         if request.method == "DELETE" and is_subscribed:
             Subscribe.objects.filter(following=user, follower=obj).delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
-        return Response(status=status.HTTP_400_BAD_REQUEST)
+        return Response({"error": "Is not Authenticated."},
+                        status=status.HTTP_400_BAD_REQUEST)
 
-    @action(
-        detail=False,
-        methods=["GET"],
-        permission_classes=[IsAuthenticated],
-    )
-    def subscriptions(self, request):
-        user = request.user
-        follows = CustomUser.objects.filter(follower__following=user)
-        page = self.paginate_queryset(follows)
-        if page is not None:
-            serializer = SubscriptionsSerializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
-        serializer = SubscriptionsSerializer(follows, many=True)
-        return Response(serializer.data)
+
+class SubscriptionViewSet(viewsets.ModelViewSet):
+    queryset = Subscribe.objects.all()
+    serializer_class = SubscriptionsSerializer
+    filter_backends = (DjangoFilterBackend,)
+    permission_classes = (IsAuthenticated,)
+    pagination_class = PageNumberPaginatorCustom
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
@@ -95,23 +90,12 @@ class RecipeViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAuthorOrReadOnly,)
     pagination_class = PageNumberPaginatorCustom
 
-    def get_queryset(self):
-        qs = Recipe.objects.all()
-        if self.request.query_params.get("is_favorited"):
-            qs = qs.filter(favorite__user=self.request.user)
-        if self.request.query_params.get("is_in_shopping_cart"):
-            qs = qs.filter(cart__customer=self.request.user)
-        return qs
-
     def get_serializer_class(self):
         if self.request.method == "GET":
             return RecipeReadSerializer
         return RecipeWriteSerializer
 
     def perform_create(self, serializer):
-        serializer.save(author=self.request.user)
-
-    def perform_update(self, serializer):
         serializer.save(author=self.request.user)
 
     @action(
