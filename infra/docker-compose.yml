@@ -41,7 +41,6 @@ services:
     depends_on:
       - web
       - frontend
-
 volumes:
   postgres_data:
   static_value:
