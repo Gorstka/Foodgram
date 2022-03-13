@@ -1,4 +1,3 @@
-from django.shortcuts import get_object_or_404
 from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
 
@@ -134,15 +133,16 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def parse_ingredients(recipe, data):
-        if ingredient_data in data:
-            ingredient_current = IngredientRecipe.objects.all()
-        else:
-            raise ValidationError("Miss ingredient")
-        IngredientRecipe.objects.create(
-            recipe=recipe,
-            amount=ingredient_data["amount"],
-            ingredient=ingredient_current,
-        )
+        for ingredient_data in data:
+            if ingredient_data in data:
+                ingredient_current = IngredientRecipe.objects.all()
+            else:
+                raise serializers.ValidationError("Miss ingredient")
+            IngredientRecipe.objects.create(
+                recipe=recipe,
+                amount=ingredient_data["amount"],
+                ingredient=ingredient_current,
+            )
 
     def create(self, validated_data):
         if "tags" in validated_data:

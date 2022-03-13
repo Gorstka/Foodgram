@@ -26,7 +26,6 @@ from recipes.models import (
     Subscribe,
     Tag,
 )
-from users.models import CustomUser
 
 
 class UserViewset(DjoserUserViewSet):
