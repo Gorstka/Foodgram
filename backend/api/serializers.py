@@ -31,9 +31,13 @@ class UserSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         if not request or not request.user.is_authenticated:
             return False
-        return Subscribe.objects.filter(
-            following=request.user, follower=obj
-        ).exists()
+        return self.queryset.annotate(
+            is_subscribe=Exists(
+                Subscribe.objects.filter(
+                    following=request.user, follower=obj
+                )
+            )
+        )
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -98,17 +102,25 @@ class RecipeReadSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         if not request or not request.user.is_authenticated:
             return False
-        return Favorite.objects.filter(
-            user=request.user, favorite=obj
-        ).exists()
+        return self.queryset.annotate(
+            is_favorited=Exists(
+                Favorite.objects.filter(
+                    user=request.user, favorite=obj
+                )
+            )
+        )
 
     def get_shopping_cart(self, obj):
         request = self.context.get("request")
         if not request or not request.user.is_authenticated:
             return False
-        return ShopingCart.objects.filter(
-            customer=request.user, cart=obj
-        ).exists()
+        return self.queryset.annotate(
+            is_shopping_cart=Exists(
+                ShopingCart.objects.filter(
+                    customer=request.user, cart=obj
+                )
+            )
+        )
 
 
 class RecipeWriteSerializer(serializers.ModelSerializer):
@@ -208,6 +220,10 @@ class SubscriptionsSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         if not request or not request.user.is_authenticated:
             return False
-        return Subscribe.objects.filter(
-            following=request.user, follower=obj
-        ).exists()
+        return self.queryset.annotate(
+            is_subscribe=Exists(
+                Subscribe.objects.filter(
+                    following=request.user, follower=obj
+                )
+            )
+        )
