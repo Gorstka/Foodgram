@@ -1,4 +1,6 @@
-# _FOODGRAM - продуктовый помощник_
+# _FOODGRAM - продуктовый помощник_ 
+
+Адрес сервиса - 130.193.43.250
 ____
 
 ![foodgram_workflow](https://github.com/Gorstka/foodgram-project-react/actions/workflows/foodgram_workflow.yml/badge.svg)
