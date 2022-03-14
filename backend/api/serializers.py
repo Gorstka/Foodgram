@@ -1,4 +1,4 @@
-from django.db.models import Exists
+from django.db.models import Exists, OuterRef
 from drf_extra_fields.fields import Base64ImageField
 
 from rest_framework import serializers
