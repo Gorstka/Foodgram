@@ -10,7 +10,7 @@ services:
       - ./.env
 
   web:
-    image: gorstka/foodgram:v1.1
+    image: gorstka/foodgram:latest
     restart: always
     volumes:
       - static_value:/app/static/
@@ -21,14 +21,14 @@ services:
       - ./.env
 
   frontend:
-    image: gorstka/foodgram_front:v1.1
+    image: gorstka/foodgram_front:latest
     volumes:
       - ../frontend/:/app/result_build/
     depends_on:
       - web
 
   nginx:
-    image: nginx:latest
+    image: nginx:1.21.3-alpine
     ports:
       - "80:80"
     volumes:

@@ -30,23 +30,23 @@ class UserSerializer(serializers.ModelSerializer):
         model = CustomUser
 
     def get_is_subscribed(self, obj):
-        request = self.context.get("request")
-        if not request or not request.user.is_authenticated:
-            return False
-        return self.queryset.annotate(
-            is_subscribe=Exists(
-                Subscribe.objects.filter(
-                    following=self.request.user,
-                    follower=OuterRef("pk")
-                )
-            )
-        )
+        return getattr(obj, "is_subscribed", False)
 
 
 class TagSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tag
         fields = ("id", "name", "color", "slug")
+
+    def validate(self, data):
+        tags = []
+        if tag not in tags:
+            tags.append(tag)
+        else:
+            raise serializers.ValidationError(
+                "Тэги не должны повторяться!"
+            )
+        return data
 
 
 class IngredientSerializer(serializers.ModelSerializer):
@@ -65,6 +65,19 @@ class IngredientRecipeSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = IngredientRecipe
         fields = ("id", "name", "measurement_unit", "amount")
+
+    def validate(self, data):
+        ingredients = []
+        if ingredient["amount"] < 1:
+            raise serializers.ValidationError(
+                "Укажите корректное количество ингредиента!"
+            )
+        if ingredient["ingredient"]["id"] not in ingredients:
+            ingredients.append(ingredient["ingredient"]["id"])
+        else:
+            raise serializers.ValidationError(
+                "Ингредиенты не должны повторяться!"
+            )
 
 
 class IngredientCreateRecipeSerializer(serializers.ModelSerializer):
@@ -102,30 +115,10 @@ class RecipeReadSerializer(serializers.ModelSerializer):
         )
 
     def get_favorited(self, obj):
-        request = self.context.get("request")
-        if not request or not request.user.is_authenticated:
-            return False
-        return self.queryset.annotate(
-            is_favorited=Exists(
-                Favorite.objects.filter(
-                    user=self.request.user,
-                    favorite=OuterRef("pk")
-                )
-            )
-        )
+        return getattr(obj, 'is_favorited', False)
 
     def get_shopping_cart(self, obj):
-        request = self.context.get("request")
-        if not request or not request.user.is_authenticated:
-            return False
-        return self.queryset.annotate(
-            is_shopping_cart=Exists(
-                ShopingCart.objects.filter(
-                    customer=self.request.user,
-                    cart=OuterRef("pk")
-                )
-            )
-        )
+        return getattr(obj, "is_in_shopping_cart", False)
 
 
 class RecipeWriteSerializer(serializers.ModelSerializer):
@@ -182,18 +175,6 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         return instance
 
     def validate(self, data):
-        ingredients = []
-        for ingredient in data["related_ingredients"]:
-            if ingredient["amount"] < 1:
-                raise serializers.ValidationError(
-                    "Укажите корректное количество ингредиента!"
-                )
-            if ingredient["ingredient"]["id"] not in ingredients:
-                ingredients.append(ingredient["ingredient"]["id"])
-            else:
-                raise serializers.ValidationError(
-                    "Ингредиенты не должны повторяться!"
-                )
         tags = []
         for tag in data["tags"]:
             if tag not in tags:
@@ -222,14 +203,4 @@ class SubscriptionsSerializer(serializers.ModelSerializer):
         model = CustomUser
 
     def get_is_subscribed(self, obj):
-        request = self.context.get("request")
-        if not request or not request.user.is_authenticated:
-            return False
-        return self.queryset.annotate(
-            is_subscribe=Exists(
-                Subscribe.objects.filter(
-                    following=self.request.user,
-                    follower=OuterRef("pk")
-                )
-            )
-        )
+        return getattr(obj, "is_subscribe", False)

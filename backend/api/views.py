@@ -52,6 +52,15 @@ class UserViewset(DjoserUserViewSet):
         return Response({"error": "Is not Authenticated."},
                         status=status.HTTP_400_BAD_REQUEST)
 
+    def get_queryset(self):
+        return super().get_queryset().annotate(
+            is_subscribe=Exists(
+                Subscribe.objects.filter(
+                    following=request.user, follower_id=OuterRef("pk")
+                )
+            )
+        )
+
 
 class SubscriptionViewSet(viewsets.ModelViewSet):
     queryset = Subscribe.objects.all()
@@ -89,6 +98,20 @@ class RecipeViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAuthorOrReadOnly,)
     pagination_class = PageNumberPaginatorCustom
 
+    def get_queryset(self):
+        return super().get_queryset().annotate(
+            is_in_shopping_cart=Exists(
+                ShoppingCart.objects.filter(
+                    customer=request.user, cart_id=OuterRef("pk")
+                )
+            ),
+            is_favorited=Exists(
+                Favorite.objects.filter(
+                    user=request.user, favorite_id=OuterRef("pk")
+                )
+            )
+        )
+
     def get_serializer_class(self):
         if self.request.method == "GET":
             return RecipeReadSerializer
@@ -113,7 +136,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
         if request.method == "DELETE" and favorite:
             Favorite.objects.filter(user=user, favorite=obj).delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
-        return Response(status=status.HTTP_400_BAD_REQUEST)
+        return Response({"error": "Is not Authenticated."},
+                        status=status.HTTP_400_BAD_REQUEST)
 
     @action(
         detail=True,
@@ -131,7 +155,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
         if request.method == "DELETE" and in_cart:
             ShopingCart.objects.filter(customer=user, cart=obj).delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
-        return Response(status=status.HTTP_400_BAD_REQUEST)
+        return Response({"error": "Is not Authenticated."},
+                        status=status.HTTP_400_BAD_REQUEST)
 
     @action(
         detail=False, methods=["GET"], permission_classes=[IsAuthenticated]
