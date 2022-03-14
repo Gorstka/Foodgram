@@ -36,7 +36,8 @@ class UserSerializer(serializers.ModelSerializer):
         return self.queryset.annotate(
             is_subscribe=Exists(
                 Subscribe.objects.filter(
-                    following=request.user, follower=obj
+                    following=self.request.user,
+                    follower=OuterRef("pk")
                 )
             )
         )
@@ -107,7 +108,8 @@ class RecipeReadSerializer(serializers.ModelSerializer):
         return self.queryset.annotate(
             is_favorited=Exists(
                 Favorite.objects.filter(
-                    user=request.user, favorite=obj
+                    user=self.request.user,
+                    favorite=OuterRef("pk")
                 )
             )
         )
@@ -119,7 +121,8 @@ class RecipeReadSerializer(serializers.ModelSerializer):
         return self.queryset.annotate(
             is_shopping_cart=Exists(
                 ShopingCart.objects.filter(
-                    customer=request.user, cart=obj
+                    customer=self.request.user,
+                    cart=OuterRef("pk")
                 )
             )
         )
@@ -225,7 +228,8 @@ class SubscriptionsSerializer(serializers.ModelSerializer):
         return self.queryset.annotate(
             is_subscribe=Exists(
                 Subscribe.objects.filter(
-                    following=request.user, follower=obj
+                    following=self.request.user,
+                    follower=OuterRef("pk")
                 )
             )
         )
