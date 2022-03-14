@@ -1,3 +1,4 @@
+from django.db.models import Exists, OuterRef
 from django.http import HttpResponse
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet as DjoserUserViewSet
