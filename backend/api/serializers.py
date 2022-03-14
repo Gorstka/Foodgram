@@ -36,12 +36,12 @@ class TagSerializer(serializers.ModelSerializer):
 
     def validate(self, data):
         tags = []
-        if tag not in tags:
-            tags.append(tag)
-        else:
-            raise serializers.ValidationError(
-                "Тэги не должны повторяться!"
-            )
+        for tag in data['tags']:
+            if tag not in tags:
+                tags.append(tag)
+            else:
+                raise serializers.ValidationError(
+                    'Тэги не должны повторяться!')
         return data
 
 
@@ -64,16 +64,16 @@ class IngredientRecipeSerializer(serializers.HyperlinkedModelSerializer):
 
     def validate(self, data):
         ingredients = []
-        if ingredient["amount"] < 1:
-            raise serializers.ValidationError(
-                "Укажите корректное количество ингредиента!"
-            )
-        if ingredient["ingredient"]["id"] not in ingredients:
-            ingredients.append(ingredient["ingredient"]["id"])
-        else:
-            raise serializers.ValidationError(
-                "Ингредиенты не должны повторяться!"
-            )
+        for ingredient in data['related_ingredients']:
+            if ingredient['amount'] < 1:
+                raise serializers.ValidationError(
+                    'Укажите корректное количество ингредиента!')
+            if ingredient['ingredient']['id'] not in ingredients:
+                ingredients.append(ingredient['ingredient']['id'])
+            else:
+                raise serializers.ValidationError(
+                    'Ингредиенты не должны повторяться!')
+        return data
 
 
 class IngredientCreateRecipeSerializer(serializers.ModelSerializer):

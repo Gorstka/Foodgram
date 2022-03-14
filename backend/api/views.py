@@ -57,7 +57,7 @@ class UserViewset(DjoserUserViewSet):
         return super().get_queryset().annotate(
             is_subscribe=Exists(
                 Subscribe.objects.filter(
-                    following=request.user, follower_id=OuterRef("pk")
+                    following=self.request.user, follower_id=OuterRef("pk")
                 )
             )
         )
@@ -102,13 +102,13 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         return super().get_queryset().annotate(
             is_in_shopping_cart=Exists(
-                ShoppingCart.objects.filter(
-                    customer=request.user, cart_id=OuterRef("pk")
+                ShopingCart.objects.filter(
+                    customer=self.request.user, cart_id=OuterRef("pk")
                 )
             ),
             is_favorited=Exists(
                 Favorite.objects.filter(
-                    user=request.user, favorite_id=OuterRef("pk")
+                    user=self.request.user, favorite_id=OuterRef("pk")
                 )
             )
         )
