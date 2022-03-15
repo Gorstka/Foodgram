@@ -10,7 +10,7 @@ services:
       - ./.env
 
   web:
-    image: gorstka/foodgram:v1.1
+    build: ../backend
     restart: always
     volumes:
       - static_value:/app/static/
