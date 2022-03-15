@@ -181,7 +181,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         text = 'Ваш список покупок: \n'
         for ingredient in queryset:
             text += (f'{list(ingredient)[0]} - '
-                     f'{list(ingredient)[1]} '
+                     f'{list(ingredient)[1]}'
                      f'{list(ingredient)[2]} \n')
         response = HttpResponse(text, 'Content-Type: application/txt')
         response['Content-Disposition'] = 'attachment; filename="wishlist"'
