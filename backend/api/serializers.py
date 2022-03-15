@@ -34,16 +34,6 @@ class TagSerializer(serializers.ModelSerializer):
         model = Tag
         fields = ("id", "name", "color", "slug")
 
-    def validate(self, data):
-        tags = []
-        for tag in data['tags']:
-            if tag not in tags:
-                tags.append(tag)
-            else:
-                raise serializers.ValidationError(
-                    'Тэги не должны повторяться!')
-        return data
-
 
 class IngredientSerializer(serializers.ModelSerializer):
     class Meta:
@@ -61,19 +51,6 @@ class IngredientRecipeSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = IngredientRecipe
         fields = ("id", "name", "measurement_unit", "amount")
-
-    def validate(self, data):
-        ingredients = []
-        for ingredient in data['related_ingredients']:
-            if ingredient['amount'] < 1:
-                raise serializers.ValidationError(
-                    'Укажите корректное количество ингредиента!')
-            if ingredient['ingredient']['id'] not in ingredients:
-                ingredients.append(ingredient['ingredient']['id'])
-            else:
-                raise serializers.ValidationError(
-                    'Ингредиенты не должны повторяться!')
-        return data
 
 
 class IngredientCreateRecipeSerializer(serializers.ModelSerializer):
@@ -129,6 +106,7 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Recipe
         fields = (
+            "id",
             "ingredients",
             "tags",
             "image",
@@ -171,6 +149,13 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         return instance
 
     def validate(self, data):
+        ingredients = []
+        for ingredient in data['related_ingredients']:
+            if ingredient['ingredient']['id'] not in ingredients:
+                ingredients.append(ingredient['ingredient']['id'])
+            else:
+                raise serializers.ValidationError(
+                    'Ингредиенты не должны повторяться!')
         tags = []
         for tag in data["tags"]:
             if tag not in tags:

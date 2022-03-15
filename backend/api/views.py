@@ -29,7 +29,7 @@ from recipes.models import (
 )
 
 
-class UserViewset(DjoserUserViewSet):
+class UserViewSet(DjoserUserViewSet):
     pagination_class = LimitOffsetPagination
 
     @action(
@@ -69,6 +69,15 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
     filter_backends = (DjangoFilterBackend,)
     permission_classes = (IsAuthenticated,)
     pagination_class = PageNumberPaginatorCustom
+
+    def get_queryset(self):
+        return super().get_queryset().annotate(
+            is_subscribe=Exists(
+                Subscribe.objects.filter(
+                    following=self.request.user, follower_id=OuterRef("pk")
+                )
+            )
+        )
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
@@ -110,7 +119,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 Favorite.objects.filter(
                     user=self.request.user, favorite_id=OuterRef("pk")
                 )
-            )
+            ),
         )
 
     def get_serializer_class(self):
@@ -166,13 +175,14 @@ class RecipeViewSet(viewsets.ModelViewSet):
         user = request.user
         in_cart = Recipe.objects.filter(cart__customer=user)
         queryset = in_cart.values_list(
-            "ingredients__name",
-            "related_ingredients__amount",
-            "ingredients__measurement_unit",
-        )
-        text = "Ваш список покупок: \n"
+            'ingredients__name',
+            'related_ingredients__amount',
+            'ingredients__measurement_unit')
+        text = 'Ваш список покупок: \n'
         for ingredient in queryset:
-            text += f"{str(ingredient)} \n"
-        response = HttpResponse(text, "Content-Type: application/txt")
-        response["Content-Disposition"] = 'attachment; filename="wishlist"'
+            text += (f'{list(ingredient)[0]} - '
+                     f'{list(ingredient)[1]} '
+                     f'{list(ingredient)[2]} \n')
+        response = HttpResponse(text, 'Content-Type: application/txt')
+        response['Content-Disposition'] = 'attachment; filename="wishlist"'
         return response
