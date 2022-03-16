@@ -1,15 +1,13 @@
-from django.shortcuts import get_object_or_404
 from drf_extra_fields.fields import Base64ImageField
+
+from rest_framework import serializers
+
 from recipes.models import (
-    Favorite,
     Ingredient,
     IngredientRecipe,
     Recipe,
-    ShopingCart,
-    Subscribe,
     Tag,
 )
-from rest_framework import serializers
 from users.models import CustomUser
 
 
@@ -28,12 +26,7 @@ class UserSerializer(serializers.ModelSerializer):
         model = CustomUser
 
     def get_is_subscribed(self, obj):
-        request = self.context.get("request")
-        if not request or not request.user.is_authenticated:
-            return False
-        return Subscribe.objects.filter(
-            following=request.user, follower=obj
-        ).exists()
+        return getattr(obj, "is_subscribed", False)
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -95,20 +88,10 @@ class RecipeReadSerializer(serializers.ModelSerializer):
         )
 
     def get_favorited(self, obj):
-        request = self.context.get("request")
-        if not request or not request.user.is_authenticated:
-            return False
-        return Favorite.objects.filter(
-            user=request.user, favorite=obj
-        ).exists()
+        return getattr(obj, 'is_favorited', False)
 
     def get_shopping_cart(self, obj):
-        request = self.context.get("request")
-        if not request or not request.user.is_authenticated:
-            return False
-        return ShopingCart.objects.filter(
-            customer=request.user, cart=obj
-        ).exists()
+        return getattr(obj, "is_in_shopping_cart", False)
 
 
 class RecipeWriteSerializer(serializers.ModelSerializer):
@@ -135,9 +118,10 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
     @staticmethod
     def parse_ingredients(recipe, data):
         for ingredient_data in data:
-            ingredient_current = get_object_or_404(
-                Ingredient, pk=ingredient_data["ingredient"]["id"]
-            )
+            if ingredient_data in data:
+                ingredient_current = IngredientRecipe.objects.all()
+            else:
+                raise serializers.ValidationError("Miss ingredient")
             IngredientRecipe.objects.create(
                 recipe=recipe,
                 amount=ingredient_data["amount"],
@@ -148,7 +132,7 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         if "tags" in validated_data:
             tags = validated_data.pop("tags")
         ingredients_data = validated_data.pop("related_ingredients")
-        recipe = Recipe.objects.create(**validated_data)
+        recipe = super().create(validated_data)
         recipe.tags.add(*tags)
         self.parse_ingredients(recipe, ingredients_data)
         return recipe
@@ -165,22 +149,13 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         return instance
 
     def validate(self, data):
-        if data["cooking_time"] < 0:
-            raise serializers.ValidationError(
-                "Укажите корректное время приготовления!"
-            )
         ingredients = []
-        for ingredient in data["related_ingredients"]:
-            if ingredient["amount"] < 1:
-                raise serializers.ValidationError(
-                    "Укажите корректное количество ингредиента!"
-                )
-            if ingredient["ingredient"]["id"] not in ingredients:
-                ingredients.append(ingredient["ingredient"]["id"])
+        for ingredient in data['related_ingredients']:
+            if ingredient['ingredient']['id'] not in ingredients:
+                ingredients.append(ingredient['ingredient']['id'])
             else:
                 raise serializers.ValidationError(
-                    "Ингредиенты не должны повторяться!"
-                )
+                    'Ингредиенты не должны повторяться!')
         tags = []
         for tag in data["tags"]:
             if tag not in tags:
@@ -209,9 +184,4 @@ class SubscriptionsSerializer(serializers.ModelSerializer):
         model = CustomUser
 
     def get_is_subscribed(self, obj):
-        request = self.context.get("request")
-        if not request or not request.user.is_authenticated:
-            return False
-        return Subscribe.objects.filter(
-            following=request.user, follower=obj
-        ).exists()
+        return getattr(obj, "is_subscribe", False)
