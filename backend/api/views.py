@@ -1,92 +1,55 @@
-from django.db.models import Exists, OuterRef
-from django.http import HttpResponse
-from django_filters.rest_framework import DjangoFilterBackend
-from djoser.views import UserViewSet as DjoserUserViewSet
-from recipes.models import (
-    Favorite,
-    Ingredient,
-    Recipe,
-    ShopingCart,
-    Subscribe,
-    Tag,
-)
-from rest_framework import filters, status, viewsets
+from rest_framework import status, viewsets, filters
 from rest_framework.decorators import action
-from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.pagination import LimitOffsetPagination
+from django.http import HttpResponse
+from djoser.views import UserViewSet as DjoserUserViewSet
+from django_filters.rest_framework import DjangoFilterBackend
 
-from .filters import IngredientFilter, RecipeFilter
-from .paginators import PageNumberPaginatorCustom
-from .permissions import IsAuthorOrReadOnly
+from recipes.models import (
+    Tag, Ingredient, Recipe, Favorite, ShopingCart, Subscribe)
+from users.models import CustomUser
 from .serializers import (
-    IngredientSerializer,
-    RecipeReadSerializer,
-    RecipeWriteSerializer,
-    SubscriptionsSerializer,
-    TagSerializer,
-)
+    RecipeWriteSerializer, TagSerializer,
+    IngredientSerializer, RecipeReadSerializer, SubscriptionsSerializer)
+from .permissions import IsAuthorOrReadOnly
+from .filters import RecipeFilter, IngredientFilter
+from .paginators import PageNumberPaginatorCustom
 
 
-class UserViewSet(DjoserUserViewSet):
+class UserViewset(DjoserUserViewSet):
     pagination_class = LimitOffsetPagination
 
     @action(
-        detail=True,
-        methods=["GET", "DELETE"],
-        permission_classes=[IsAuthenticated],
-    )
+        detail=True, methods=['GET', 'DELETE'],
+        permission_classes=[IsAuthenticated])
     def subscribe(self, request, id=None):
         user = request.user
         obj = self.get_object()
         is_subscribed = Subscribe.objects.filter(
-            following=user, follower=obj
-        ).exists()
-        if request.method == "GET" and not is_subscribed:
+            following=user, follower=obj).exists()
+        if request.method == 'GET' and not is_subscribed:
             Subscribe.objects.create(following=user, follower=obj)
             serializer = self.get_serializer(obj)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-        if request.method == "DELETE" and is_subscribed:
+        if request.method == 'DELETE' and is_subscribed:
             Subscribe.objects.filter(following=user, follower=obj).delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
-        return Response(
-            {"error": "Is not Authenticated."},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
+        return Response(status=status.HTTP_400_BAD_REQUEST)
 
-    def get_queryset(self):
-        return (
-            super()
-            .get_queryset()
-            .annotate(
-                is_subscribe=Exists(
-                    Subscribe.objects.filter(
-                        following=self.request.user, follower_id=OuterRef("pk")
-                    )
-                )
-            )
-        )
-
-
-class SubscriptionViewSet(viewsets.ModelViewSet):
-    queryset = Subscribe.objects.all()
-    serializer_class = SubscriptionsSerializer
-    filter_backends = (DjangoFilterBackend,)
-    permission_classes = (IsAuthenticated,)
-    pagination_class = PageNumberPaginatorCustom
-
-    def get_queryset(self):
-        return (
-            super()
-            .get_queryset()
-            .annotate(
-                is_subscribe=Exists(
-                    Subscribe.objects.filter(
-                        following=self.request.user, follower_id=OuterRef("pk")
-                    )
-                )
-            )
-        )
+    @action(
+        detail=False, methods=['GET'], permission_classes=[IsAuthenticated],
+    )
+    def subscriptions(self, request):
+        user = request.user
+        follows = CustomUser.objects.filter(follower__following=user)
+        page = self.paginate_queryset(follows)
+        if page is not None:
+            serializer = SubscriptionsSerializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+        serializer = SubscriptionsSerializer(follows, many=True)
+        return Response(serializer.data)
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
@@ -100,13 +63,10 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = IngredientSerializer
     permission_classes = [AllowAny]
     pagination_class = None
-    filter_backends = (
-        DjangoFilterBackend,
-        filters.OrderingFilter,
-    )
+    filter_backends = (DjangoFilterBackend, filters.OrderingFilter, )
     filterset_class = IngredientFilter
-    search_fields = ("^name",)
-    ordering_fields = ("^name",)
+    search_fields = ('^name',)
+    ordering_fields = ('^name',)
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
@@ -118,72 +78,55 @@ class RecipeViewSet(viewsets.ModelViewSet):
     pagination_class = PageNumberPaginatorCustom
 
     def get_queryset(self):
-        return (
-            super()
-            .get_queryset()
-            .annotate(
-                is_in_shopping_cart=Exists(
-                    ShopingCart.objects.filter(
-                        customer=self.request.user, cart_id=OuterRef("pk")
-                    )
-                ),
-                is_favorited=Exists(
-                    Favorite.objects.filter(
-                        user=self.request.user, favorite_id=OuterRef("pk")
-                    )
-                ),
-            )
-        )
+        qs = Recipe.objects.all()
+        if self.request.query_params.get('is_favorited'):
+            qs = qs.filter(favorite__user=self.request.user)
+        if self.request.query_params.get('is_in_shopping_cart'):
+            qs = qs.filter(cart__customer=self.request.user)
+        return qs
 
     def get_serializer_class(self):
-        if self.request.method == "GET":
+        if self.request.method == 'GET':
             return RecipeReadSerializer
         return RecipeWriteSerializer
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
 
+    def perform_update(self, serializer):
+        serializer.save(author=self.request.user)
+
     @action(
-        detail=True,
-        methods=["GET", "DELETE"],
-        permission_classes=[IsAuthenticated],
-    )
+        detail=True, methods=['GET', 'DELETE'],
+        permission_classes=[IsAuthenticated])
     def favorite(self, request, pk=None):
         user = request.user
         obj = self.get_object()
         favorite = Favorite.objects.filter(user=user, favorite=obj).exists()
-        if request.method == "GET" and not favorite:
+        if request.method == 'GET' and not favorite:
             Favorite.objects.create(user=user, favorite=obj)
             serializer = self.get_serializer(obj)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-        if request.method == "DELETE" and favorite:
+        if request.method == 'DELETE' and favorite:
             Favorite.objects.filter(user=user, favorite=obj).delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
-        return Response(
-            {"error": "Is not Authenticated."},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
+        return Response(status=status.HTTP_400_BAD_REQUEST)
 
     @action(
-        detail=True,
-        methods=["GET", "DELETE"],
-        permission_classes=[IsAuthenticated],
-    )
+        detail=True, methods=['GET', 'DELETE'],
+        permission_classes=[IsAuthenticated])
     def shopping_cart(self, request, pk=None):
         user = request.user
         obj = self.get_object()
         in_cart = ShopingCart.objects.filter(customer=user, cart=obj).exists()
-        if request.method == "GET" and not in_cart:
+        if request.method == 'GET' and not in_cart:
             ShopingCart.objects.create(customer=user, cart=obj)
             serializer = self.get_serializer(obj)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-        if request.method == "DELETE" and in_cart:
+        if request.method == 'DELETE' and in_cart:
             ShopingCart.objects.filter(customer=user, cart=obj).delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
-        return Response(
-            {"error": "Is not Authenticated."},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
+        return Response(status=status.HTTP_400_BAD_REQUEST)
 
     @action(
         detail=False, methods=["GET"], permission_classes=[IsAuthenticated]
