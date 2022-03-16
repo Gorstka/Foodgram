@@ -1,6 +1,5 @@
-from django.db import models
 from django.core.validators import MinValueValidator
-
+from django.db import models
 from users.models import CustomUser
 
 
@@ -37,7 +36,7 @@ class Recipe(models.Model):
                 limit_value=0,
                 message="Укажите корректное время приготовления!",
             )
-        ]
+        ],
     )
     ingredients = models.ManyToManyField(
         Ingredient, through="IngredientRecipe", verbose_name="Ингредиенты"
@@ -69,7 +68,7 @@ class IngredientRecipe(models.Model):
                 limit_value=1,
                 message="Укажите корректное количество ингредиента!",
             )
-        ]
+        ],
     )
 
     class Meta:
