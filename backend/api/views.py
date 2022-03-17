@@ -11,6 +11,7 @@ from rest_framework.response import Response
 
 from .filters import IngredientFilter, RecipeFilter
 from .paginators import PageNumberPaginatorCustom
+from .permissions import IsAuthorOrReadOnly
 from .serializers import (
     IngredientSerializer,
     RecipeReadSerializer,
@@ -108,7 +109,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     filter_backends = (DjangoFilterBackend,)
     filterset_class = RecipeFilter
-    permission_classes = (AllowAny,)
+    permission_classes = [IsAuthorOrReadOnly]
     pagination_class = PageNumberPaginatorCustom
     ordering = ("-pub_date",)
 
@@ -119,12 +120,12 @@ class RecipeViewSet(viewsets.ModelViewSet):
             .annotate(
                 is_in_shopping_cart=Exists(
                     ShopingCart.objects.filter(
-                        customer=self.request.user, cart_id=OuterRef("pk")
+                        customer=self.request.user.id, cart_id=OuterRef("pk")
                     )
                 ),
                 is_favorited=Exists(
                     Favorite.objects.filter(
-                        user=self.request.user, favorite_id=OuterRef("pk")
+                        user=self.request.user.id, favorite_id=OuterRef("pk")
                     )
                 ),
             )
