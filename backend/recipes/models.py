@@ -26,6 +26,10 @@ class Recipe(models.Model):
         related_name="recipes",
         verbose_name="Автор",
     )
+    pub_date = models.DateTimeField(
+        verbose_name="Дата публикации",
+        auto_now_add=True
+    )
     name = models.CharField(max_length=256, verbose_name="Название рецепта")
     image = models.ImageField(upload_to="recipes/", verbose_name="Изображение")
     text = models.TextField(verbose_name="text")

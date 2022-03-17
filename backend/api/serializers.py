@@ -80,6 +80,7 @@ class RecipeReadSerializer(serializers.ModelSerializer):
             "id",
             "tags",
             "author",
+            "pub_date",
             "ingredients",
             "is_favorited",
             "is_in_shopping_cart",
@@ -108,7 +109,6 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Recipe
         fields = (
-            "id",
             "ingredients",
             "tags",
             "image",

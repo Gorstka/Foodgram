@@ -111,6 +111,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     filterset_class = RecipeFilter
     permission_classes = (IsAuthorOrReadOnly,)
     pagination_class = PageNumberPaginatorCustom
+    ordering = ("-pub_date",)
 
     def get_queryset(self):
         return (
