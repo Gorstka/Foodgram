@@ -11,7 +11,6 @@ from rest_framework.response import Response
 
 from .filters import IngredientFilter, RecipeFilter
 from .paginators import PageNumberPaginatorCustom
-from .permissions import IsAuthorOrReadOnly
 from .serializers import (
     IngredientSerializer,
     RecipeReadSerializer,
