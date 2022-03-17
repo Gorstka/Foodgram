@@ -38,9 +38,15 @@ class RecipeAdmin(admin.ModelAdmin):
     list_filter = ("name", "author", "tags")
     readonly_fields = ("favorites_count",)
     inlines = [RecipeIngredientInline]
+    autocomplete_fields = ["author"]
+    search_fields = ["favorite__name"]
 
     def favorites_count(self, obj):
         return Favorite.objects.filter(favorite=obj).count()
+
+
+class FavoriteAdmin(admin.ModelAdmin):
+    autocomplete_fields = ["user", "favorite"]
 
 
 admin.site.register(Ingredient, IngredientAdmin)
@@ -48,5 +54,5 @@ admin.site.register(Recipe, RecipeAdmin)
 admin.site.register(IngredientRecipe)
 admin.site.register(Tag)
 admin.site.register(Subscribe)
-admin.site.register(Favorite)
+admin.site.register(Favorite, FavoriteAdmin)
 admin.site.register(ShopingCart)

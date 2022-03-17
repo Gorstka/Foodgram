@@ -55,6 +55,7 @@ class IngredientRecipeSerializer(serializers.HyperlinkedModelSerializer):
 
 class IngredientCreateRecipeSerializer(serializers.ModelSerializer):
     id = serializers.PrimaryKeyRelatedField(queryset=Ingredient.objects.all())
+    amount = serializers.IntegerField(min_value=1)
 
     class Meta:
         model = IngredientRecipe
@@ -71,6 +72,7 @@ class RecipeReadSerializer(serializers.ModelSerializer):
     ingredients = IngredientRecipeSerializer(
         source="related_ingredients", many=True
     )
+    cooking_time = serializers.IntegerField(min_value=0)
 
     class Meta:
         model = Recipe
@@ -88,7 +90,7 @@ class RecipeReadSerializer(serializers.ModelSerializer):
         )
 
     def get_favorited(self, obj):
-        return getattr(obj, 'is_favorited', False)
+        return getattr(obj, "is_favorited", False)
 
     def get_shopping_cart(self, obj):
         return getattr(obj, "is_in_shopping_cart", False)
@@ -118,9 +120,11 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
     @staticmethod
     def parse_ingredients(recipe, data):
         for ingredient_data in data:
-            if ingredient_data in data:
-                ingredient_current = IngredientRecipe.objects.all()
-            else:
+            try:
+                ingredient_current = Ingredient.objects.get(
+                    pk=ingredient_data["ingredient"]["id"]
+                )
+            except serializers.ValidationError:
                 raise serializers.ValidationError("Miss ingredient")
             IngredientRecipe.objects.create(
                 recipe=recipe,

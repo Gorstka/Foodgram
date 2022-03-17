@@ -1,15 +1,8 @@
-from django.db.models import Exists, OuterRef
+from django.db.models import Exists, OuterRef, Sum
 from django.http import HttpResponse
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet as DjoserUserViewSet
-from recipes.models import (
-    Favorite,
-    Ingredient,
-    Recipe,
-    ShopingCart,
-    Subscribe,
-    Tag,
-)
+
 from rest_framework import filters, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.pagination import LimitOffsetPagination
@@ -26,10 +19,32 @@ from .serializers import (
     SubscriptionsSerializer,
     TagSerializer,
 )
+from recipes.models import (
+    Favorite,
+    Ingredient,
+    Recipe,
+    ShopingCart,
+    Subscribe,
+    Tag,
+)
+from users.models import CustomUser
 
 
 class UserViewSet(DjoserUserViewSet):
     pagination_class = LimitOffsetPagination
+
+    def get_queryset(self):
+        return (
+            super()
+            .get_queryset()
+            .annotate(
+                is_subscribe=Exists(
+                    Subscribe.objects.filter(
+                        following=self.request.user, follower_id=OuterRef("pk")
+                    )
+                )
+            )
+        )
 
     @action(
         detail=True,
@@ -54,39 +69,20 @@ class UserViewSet(DjoserUserViewSet):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    def get_queryset(self):
-        return (
-            super()
-            .get_queryset()
-            .annotate(
-                is_subscribe=Exists(
-                    Subscribe.objects.filter(
-                        following=self.request.user, follower_id=OuterRef("pk")
-                    )
-                )
-            )
-        )
-
-
-class SubscriptionViewSet(viewsets.ModelViewSet):
-    queryset = Subscribe.objects.all()
-    serializer_class = SubscriptionsSerializer
-    filter_backends = (DjangoFilterBackend,)
-    permission_classes = (IsAuthenticated,)
-    pagination_class = PageNumberPaginatorCustom
-
-    def get_queryset(self):
-        return (
-            super()
-            .get_queryset()
-            .annotate(
-                is_subscribe=Exists(
-                    Subscribe.objects.filter(
-                        following=self.request.user, follower_id=OuterRef("pk")
-                    )
-                )
-            )
-        )
+    @action(
+        detail=False,
+        methods=["GET"],
+        permission_classes=[IsAuthenticated],
+    )
+    def subscriptions(self, request):
+        user = request.user
+        follows = CustomUser.objects.filter(follower__following=user)
+        page = self.paginate_queryset(follows)
+        if page is not None:
+            serializer = SubscriptionsSerializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+        serializer = SubscriptionsSerializer(follows, many=True)
+        return Response(serializer.data)
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
@@ -111,7 +107,6 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
 
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
-    serializer_class = RecipeWriteSerializer
     filter_backends = (DjangoFilterBackend,)
     filterset_class = RecipeFilter
     permission_classes = (IsAuthorOrReadOnly,)
@@ -193,15 +188,18 @@ class RecipeViewSet(viewsets.ModelViewSet):
         in_cart = Recipe.objects.filter(cart__customer=user)
         queryset = in_cart.values_list(
             "ingredients__name",
-            "related_ingredients__amount",
-            "ingredients__measurement_unit",
+            "ingredients__measurement_unit"
+        ).annotate(
+            amount_sum=Sum(
+                "related_ingredients__amount"
+            )
         )
         text = "Ваш список покупок: \n"
         for ingredient in queryset:
             text += (
                 f"{list(ingredient)[0]} - "
-                f"{list(ingredient)[1]}"
-                f"{list(ingredient)[2]} \n"
+                f"{list(ingredient)[2]} "
+                f"{list(ingredient)[1]} \n"
             )
         response = HttpResponse(text, "Content-Type: application/txt")
         response["Content-Disposition"] = 'attachment; filename="wishlist"'

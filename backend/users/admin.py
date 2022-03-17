@@ -7,6 +7,7 @@ from .models import CustomUser
 class CustomUserAdmin(BaseUserAdmin):
     list_display = ("pk", "username", "email")
     list_filter = BaseUserAdmin.list_filter + ("email", "username")
+    search_fields = ["favorite__username"]
 
 
 admin.site.register(CustomUser, CustomUserAdmin)
