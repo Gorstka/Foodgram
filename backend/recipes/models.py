@@ -42,7 +42,7 @@ class Recipe(models.Model):
     tags = models.ManyToManyField("Tag", verbose_name="Тэги")
 
     class Meta:
-        ordering = ["-pub_date"]
+        ordering = ("-pub_date",)
         verbose_name = "Рецепт"
         verbose_name_plural = "Рецепты"
 

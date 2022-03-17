@@ -109,7 +109,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     filter_backends = (DjangoFilterBackend,)
     filterset_class = RecipeFilter
-    permission_classes = (IsAuthorOrReadOnly,)
+    permission_classes = (AllowAny,)
     pagination_class = PageNumberPaginatorCustom
     ordering = ("-pub_date",)
 
