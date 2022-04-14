@@ -33,7 +33,6 @@ docker-compose exec web python manage.py collectstatic --no-input (собрат�
 - Django
 - Django Rest Framework
 - Docker
-- Gunicorn
 - Nginx
 - PostgreSQL
 
